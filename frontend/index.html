@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MulberryAI - Leaf Disease Detector</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <span class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M12 22V12"/><path d="M5 12C5 7 8 3 12 3s7 4 7 9c0 2.5-1 4.5-2.5 6"/><path d="M5 12c2 0 4.5-.5 7-3"/></svg>
+        </span>
+        <span class="logo-text">MulberryAI</span>
+      </div>
+      <nav class="nav">
+        <a href="#detector">Detector</a>
+        <a href="#diseases">Diseases</a>
+        <a href="#research">Research</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">AI-Powered Plant Pathology</div>
+      <h1 class="hero-title">Mulberry Leaf<br /><span class="gradient-text">Disease Detection</span></h1>
+      <p class="hero-subtitle">
+        Upload a mulberry leaf image and get instant AI-powered disease diagnosis
+        using deep learning (MobileNetV2 + CNN) trained on sericulture datasets.
+      </p>
+      <a href="#detector" class="btn-primary">Start Detection →</a>
+    </div>
+    <div class="hero-bg"></div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats">
+    <div class="container stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Disease Classes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">1,091</div>
+        <div class="stat-label">Training Images</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">MobileNetV2</div>
+        <div class="stat-label">Architecture</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">Real Field</div>
+        <div class="stat-label">Dataset Source</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Detector -->
+  <section class="detector-section" id="detector">
+    <div class="container">
+      <div class="section-header">
+        <h2>Upload Leaf Image</h2>
+        <p>Supports JPG, PNG, WEBP, JFIF — max 10MB</p>
+      </div>
+
+      <div class="detector-layout">
+        <!-- Upload Panel -->
+        <div class="upload-panel">
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="40" height="40"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </div>
+            <p class="upload-title">Drag & drop your leaf image</p>
+            <p class="upload-sub">or click to browse files</p>
+            <input type="file" id="fileInput" accept="image/*,.jfif" hidden />
+            <button class="btn-upload" id="btnUpload">
+              Choose Image
+            </button>
+          </div>
+
+          <div class="preview-container" id="previewContainer" style="display:none; position:relative;">
+            <img id="previewImage" class="preview-image" alt="Leaf preview" />
+            <button class="btn-clear" id="clearBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Clear
+            </button>
+          </div>
+
+          <button class="btn-analyze" id="analyzeBtn" disabled>
+            <span id="btnText">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;margin-right:8px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg>
+              Analyse Leaf
+            </span>
+            <span id="btnLoader" class="loader" style="display:none;"></span>
+          </button>
+
+          <!-- Confidence meter — shown after analysis -->
+          <div class="confidence-panel" id="confidencePanel" style="display:none;">
+            <div class="conf-header">
+              <span class="conf-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:5px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Model Confidence
+              </span>
+              <span class="conf-value" id="confValue">—</span>
+            </div>
+            <div class="conf-bar-track">
+              <div class="conf-bar-fill" id="confBarFill"></div>
+            </div>
+            <div class="conf-breakdown" id="confBreakdown"></div>
+          </div>
+
+          <!-- Severity box — shown after unhealthy prediction -->
+          <div class="severity-panel" id="severityPanel" style="display:none;">
+            <div class="severity-header" id="severityHeader"></div>
+            <div class="severity-body">
+              <div class="severity-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Act within <strong>48–72 hours</strong> of detection</span>
+              </div>
+              <div class="severity-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span>Isolate affected plants immediately</span>
+              </div>
+              <div class="severity-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Re-scan after treatment to confirm recovery</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Results Panel -->
+        <div class="results-panel" id="resultsPanel">
+          <div class="results-placeholder" id="resultsPlaceholder">
+            <div class="placeholder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M12 22V12"/><path d="M5 12C5 7 8 3 12 3s7 4 7 9c0 2.5-1 4.5-2.5 6"/><path d="M5 12c2 0 4.5-.5 7-3"/><circle cx="12" cy="22" r="0"/></svg>
+            </div>
+            <p>Upload a leaf image to see the diagnosis</p>
+          </div>
+
+          <div class="results-content" id="resultsContent" style="display:none;">
+
+            <!-- Main Result -->
+            <div class="result-main" id="resultMain">
+              <div class="result-status-icon" id="resultIcon"></div>
+              <div class="result-status-text" id="resultStatus"></div>
+              <div class="result-disease-name" id="diseaseName"></div>
+            </div>
+
+            <!-- Disease Detail (shown only for unhealthy) -->
+            <div class="disease-detail" id="diseaseDetail" style="display:none;">
+
+              <div class="detail-block cause-block">
+              <div class="detail-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:middle;margin-right:5px;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                Cause
+              </div>
+                <div class="detail-value" id="diseaseCause"></div>
+              </div>
+
+              <div class="detail-block why-block">
+              <div class="detail-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:middle;margin-right:5px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                Why it happens
+              </div>
+                <ul class="detail-list" id="diseaseWhy"></ul>
+              </div>
+
+              <div class="detail-block solution-block">
+              <div class="detail-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:middle;margin-right:5px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                Solution
+              </div>
+                <ul class="detail-list solution-list" id="diseaseSolution"></ul>
+              </div>
+
+            </div>
+
+            <!-- Healthy message -->
+            <div class="healthy-msg" id="healthyMsg" style="display:none;">
+              <p>This leaf is disease-free. Continue regular care and monitoring of your mulberry plants.</p>
+            </div>
+
+          </div>
+
+          <div class="error-content" id="errorContent" style="display:none;">
+            <div class="error-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="40" height="40"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <p id="errorText"></p>
+            <button class="btn-retry" onclick="resetUI()">Try Again</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Disease Guide -->
+  <section class="diseases-section" id="diseases">
+    <div class="container">
+      <div class="section-header">
+        <h2>What the Model Detects</h2>
+        <p>Trained on 1,091 real mulberry leaf images from Bangladesh sericulture farms</p>
+      </div>
+      <div class="diseases-grid three-col">
+        <div class="disease-card healthy">
+          <div class="dc-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h3>Healthy</h3>
+          <p>Disease-free leaf with uniform green color, smooth texture and no visible spots or discoloration.</p>
+          <div class="dc-meta">440 training images</div>
+          <div class="dc-action">No treatment needed</div>
+        </div>
+        <div class="disease-card rust">
+          <div class="dc-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          </div>
+          <h3>Leaf Rust</h3>
+          <p>Irregular reddish-brown pustules on leaf surface. Caused by <em>Cerotelium fici</em> fungal pathogen.</p>
+          <div class="dc-meta">489 training images</div>
+          <div class="dc-action dc-action-warn">Fungicide treatment needed</div>
+        </div>
+        <div class="disease-card spot">
+          <div class="dc-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="36" height="36"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <h3>Leaf Spot</h3>
+          <p>Dark brown circular spots with yellow halos. Caused by <em>Cercospora moricola</em> fungus.</p>
+          <div class="dc-meta">162 training images</div>
+          <div class="dc-action dc-action-warn">Copper fungicide needed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Research Resources -->
+  <section class="research-section" id="research">
+    <div class="container">
+      <div class="section-header">
+        <h2>Research References</h2>
+        <p>Papers and dataset directly used in this project</p>
+      </div>
+      <div class="research-grid">
+
+        <div class="research-card">
+          <div class="research-tag">Frontiers in Plant Science · 2023</div>
+          <h4>Explainable Deep Learning for Automatic Mulberry Leaf Disease Classification</h4>
+          <p>Source of the dataset used in this project. PDS-CNN model trained on real mulberry leaf images (Leaf Rust + Leaf Spot + Healthy) collected from Bangladesh sericulture farms. Uses Grad-CAM for explainability.</p>
+          <a href="https://www.frontiersin.org/articles/10.3389/fpls.2023.1175515/full" target="_blank" class="research-link">View Paper →</a>
+        </div>
+
+        <div class="research-card">
+          <div class="research-tag">IEEE Access · 2024</div>
+          <h4>Mulberry Leaf Disease Detection Using CNN-Based Smart Android Application</h4>
+          <p>CNN-based classification model for mulberry leaf disease recognition. Same dataset authors. Outperforms existing SOTA approaches in disease identification accuracy.</p>
+          <a href="https://doi.org/10.1109/ACCESS.2024.3407153" target="_blank" class="research-link">View Paper →</a>
+        </div>
+
+        <div class="research-card dataset-card">
+          <div class="research-tag">Dataset · Kaggle</div>
+          <h4>Mulberry Leaf Dataset — Nahiduzzaman et al.</h4>
+          <p>1,091 real mulberry leaf images captured with DSLR camera from farms in Rajshahi, Bangladesh. 3 classes: Disease Free (440), Leaf Rust (489), Leaf Spot (162). Annotated by sericulture experts.</p>
+          <a href="https://www.kaggle.com/datasets/nahiduzzaman13/mulberry-leaf-dataset" target="_blank" class="research-link">View Dataset →</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:6px;opacity:0.7;"><path d="M12 22V12"/><path d="M5 12C5 7 8 3 12 3s7 4 7 9c0 2.5-1 4.5-2.5 6"/><path d="M5 12c2 0 4.5-.5 7-3"/></svg>
+        MulberryAI — Deep Learning for Sericulture Disease Management
+      </p>
+      <p class="footer-sub">Built with MobileNetV2 · TensorFlow · Flask · Research-backed methodology</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

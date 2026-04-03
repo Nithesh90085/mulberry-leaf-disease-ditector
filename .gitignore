@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+venv/
+env/
+
+# Model file (too large for GitHub)
+backend/mulberry_model.h5
+
+# Uploads and feedback
+backend/uploads/
+backend/feedback_data/
+
+# Dataset (too large for GitHub)
+backend/dataset/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
