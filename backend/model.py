@@ -76,35 +76,80 @@ def _get_validator():
         _imagenet_validator = MobileNetV2(weights="imagenet", include_top=True)
     return _imagenet_validator
 
-def is_leaf_image(image_path: str, top_n: int = 5) -> bool:
+def is_leaf_image(image_path: str, top_n: int = 15) -> bool:
     """
-    Use ImageNet MobileNetV2 to check if the image contains a plant/leaf.
-    Returns False (invalid) if none of the top predictions are plant-related.
+    Two-stage check:
+    1. ImageNet: reject if confidently a non-plant object
+    2. Color check: leaves have significant green/yellow/brown tones
     """
+    # ── Stage 1: ImageNet check ──────────────────────────────────────────
     validator = _get_validator()
     img = keras.utils.load_img(image_path, target_size=(224, 224))
     arr = keras.utils.img_to_array(img)
-    arr = np.expand_dims(arr, axis=0)
-    arr = preprocess_input(arr)
+    arr_batch = np.expand_dims(arr, axis=0)
+    arr_batch = preprocess_input(arr_batch)
 
-    preds = validator.predict(arr, verbose=0)
-    top = decode_predictions(preds, top=top_n)[0]  # [(class_id, name, prob), ...]
+    preds = validator.predict(arr_batch, verbose=0)
+    top = decode_predictions(preds, top=top_n)[0]
+
+    _PLANT_KEYWORDS = (
+        "leaf", "plant", "flower", "tree", "shrub", "herb",
+        "fern", "moss", "grass", "weed", "vine", "foliage",
+        "blossom", "petal", "stem", "branch", "twig", "bark",
+        "mulberry", "berry", "fruit", "vegetable", "crop",
+        "rapeseed", "hay", "corn", "cabbage", "lettuce", "spinach",
+        "algae", "seaweed", "reed", "bamboo", "palm", "maple",
+        "oak", "pine", "willow", "fig", "tobacco", "cotton",
+        "daisy", "acorn", "cucumber", "zucchini", "artichoke",
+    )
+
+    _REJECT_KEYWORDS = (
+        "person", "people", "man", "woman", "child", "baby", "face",
+        "car", "truck", "bus", "vehicle", "bicycle", "motorcycle", "cab",
+        "dog", "cat", "bird", "fish", "bear", "lion", "tiger", "elephant",
+        "phone", "computer", "laptop", "keyboard", "screen", "television",
+        "chair", "table", "sofa", "bed", "building", "house", "street",
+        "pizza", "burger", "sandwich", "cake", "bread", "hot_dog",
+        "bottle", "cup", "bowl", "plate", "gun", "knife",
+    )
+
+    imagenet_is_plant = False
+    imagenet_is_object = False
 
     for class_id, label, prob in top:
-        # Accept if synset is in our plant list
-        if class_id in _PLANT_SYNSETS:
-            return True
-        # Accept any prediction whose label contains leaf/plant/flower keywords
         label_lower = label.lower()
-        if any(kw in label_lower for kw in (
-            "leaf", "plant", "flower", "tree", "shrub", "herb",
-            "fern", "moss", "grass", "weed", "vine", "foliage",
-            "blossom", "petal", "stem", "branch", "twig", "bark",
-            "mulberry", "berry", "fruit", "vegetable", "crop"
-        )):
-            return True
+        if class_id in _PLANT_SYNSETS or any(kw in label_lower for kw in _PLANT_KEYWORDS):
+            imagenet_is_plant = True
+            break
+        if any(kw in label_lower for kw in _REJECT_KEYWORDS):
+            imagenet_is_object = True
 
-    return False
+    # Confidently identified as a non-plant object → reject immediately
+    if imagenet_is_object and not imagenet_is_plant:
+        return False
+
+    # ── Stage 2: Color check ─────────────────────────────────────────────
+    # Load raw pixels (0-255) separately — arr was preprocessed to -1..1
+    raw_img = keras.utils.load_img(image_path, target_size=(224, 224))
+    raw_arr = keras.utils.img_to_array(raw_img)  # shape (224,224,3), values 0-255
+    pixels = raw_arr.reshape(-1, 3)
+    r, g, b = pixels[:, 0], pixels[:, 1], pixels[:, 2]
+
+    # Green pixels: G channel dominant
+    green_mask = (g > r * 1.05) & (g > b * 1.05) & (g > 60)
+    # Yellow pixels: R and G both high, B low
+    yellow_mask = (r > 120) & (g > 120) & (b < 100) & (np.abs(r.astype(int) - g.astype(int)) < 60)
+    # Brown pixels: R dominant, moderate G, low B
+    brown_mask = (r > 80) & (g > 40) & (b < 80) & (r > g) & (r > b)
+
+    total = len(pixels)
+    leaf_color_ratio = (green_mask.sum() + yellow_mask.sum() + brown_mask.sum()) / total
+
+    # At least 20% of the image should be leaf-colored
+    if leaf_color_ratio < 0.20:
+        return False
+
+    return True
 
 # ──────────────────────────────────────────────────────────────────────────
 

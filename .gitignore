@@ -6,9 +6,6 @@ __pycache__/
 venv/
 env/
 
-# Model file (too large for GitHub)
-backend/mulberry_model.h5
-
 # Uploads and feedback
 backend/uploads/
 backend/feedback_data/
